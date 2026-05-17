@@ -182,6 +182,7 @@ export interface SiteStrings {
   footerAddressL1: string
   footerAddressL2: string
   footerSite: string
+  footerWaiver: string
   footerRefundPolicy: string
   footerBottom: string
   commonBackAria: string
@@ -341,7 +342,7 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     pricingTermsCheckboxLabel:
       'By checking this box, I confirm that I have read and agree to the Terms & Conditions.',
     pricingWaiverConsentPrefix: 'By checking this box, I agree to this ',
-    pricingWaiverConsentLinkText: 'waiver and refund policy',
+    pricingWaiverConsentLinkText: 'liability waiver',
     pricingWaiverConsentSuffix:
       ', consent to the use of my image, and acknowledge and accept the risks associated with the activity.',
     pricingWaiverAgeNote:
@@ -447,7 +448,8 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     footerAddressL1: '1515A Des Marguerites St.',
     footerAddressL2: 'Saint-Lazare, QC J7T 2R8',
     footerSite: 'www.yopaw.ca',
-    footerRefundPolicy: 'Waiver & Refund Policy',
+    footerWaiver: 'Liability Waiver',
+    footerRefundPolicy: 'Refund Policy',
     footerBottom: '© 2026 Studio Yopaw · Saint-Lazare, QC · Made with 🐾',
     commonBackAria: 'Back',
     navLinks: {
@@ -603,7 +605,7 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     pricingTermsCheckboxLabel:
       'En cochant cette case, je confirme avoir lu et accepté les conditions générales.',
     pricingWaiverConsentPrefix: "En cochant cette case, j'accepte la ",
-    pricingWaiverConsentLinkText: 'décharge et la politique de remboursement',
+    pricingWaiverConsentLinkText: 'décharge de responsabilité',
     pricingWaiverConsentSuffix:
       ", consens à l'utilisation de mon image et reconnais accepter les risques liés à l'activité.",
     pricingWaiverAgeNote:
@@ -712,7 +714,8 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     footerAddressL1: '1515A, rue des Marguerites',
     footerAddressL2: 'Saint-Lazare, QC J7T 2R8',
     footerSite: 'www.yopaw.ca',
-    footerRefundPolicy: 'Décharge et remboursement',
+    footerWaiver: 'Décharge de responsabilité',
+    footerRefundPolicy: 'Politique de remboursement',
     footerBottom:
       '© 2026 Studio Yopaw · Saint-Lazare, QC · Fabriqué avec 🐾',
     commonBackAria: 'Retour',

@@ -1891,6 +1891,18 @@ section, #book { scroll-margin-top: 104px; }
   margin-bottom: 0;
 }
 
+.policy-list {
+  margin: 0 0 16px 1.25rem;
+  padding: 0;
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.policy-list li {
+  margin-bottom: 4px;
+}
+
 .policy-muted-block {
   margin-top: 20px !important;
   padding-top: 8px;
