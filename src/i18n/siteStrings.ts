@@ -450,7 +450,7 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     footerSite: 'www.yopaw.ca',
     footerWaiver: 'Liability Waiver',
     footerRefundPolicy: 'Refund Policy',
-    footerBottom: '© 2026 Studio Yopaw · Saint-Lazare, QC · Made with 🐾',
+    footerBottom: '© 2026 Studio Yopaw · Saint-Lazare, QC',
     commonBackAria: 'Back',
     navLinks: {
       howItWorks: 'How It Works',
