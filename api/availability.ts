@@ -8,19 +8,25 @@ const SCHEDULE_ITEM = 'Class Session Dates'
 /** Reads allowed session dates from Square Catalog (pushed by scripts/push-schedule.ts).
  *  Returns null if no schedule is found — availability is unfiltered in that case. */
 async function getAllowedDates(): Promise<Set<string> | null> {
-  const catResp = await square.catalog.list({ types: ['CATEGORY'] })
-  const cat = (catResp.objects ?? []).find(
-    o => o.type === 'CATEGORY' && !o.isDeleted && o.categoryData?.name?.toLowerCase() === SCHEDULE_CATEGORY,
-  )
-  if (!cat) return null
+  const [catResp, itemResp] = await Promise.all([
+    square.catalog.list({ types: ['CATEGORY'] }),
+    square.catalog.list({ types: ['ITEM'] }),
+  ])
 
-  const itemResp = await square.catalog.list({ types: ['ITEM'] })
+  // Collect all IDs for every "class schedule" category (duplicates exist in Square)
+  const schedCatIds = new Set(
+    (catResp.objects ?? [])
+      .filter(o => o.type === 'CATEGORY' && !o.isDeleted && o.categoryData?.name?.toLowerCase() === SCHEDULE_CATEGORY)
+      .map(o => o.id!),
+  )
+  if (schedCatIds.size === 0) return null
+
   const item = (itemResp.objects ?? []).find(
     o =>
       o.type === 'ITEM' &&
       !o.isDeleted &&
       o.itemData?.name === SCHEDULE_ITEM &&
-      (o.itemData?.categories ?? []).some(c => c.id === cat.id),
+      (o.itemData?.categories ?? []).some(c => schedCatIds.has(c.id!)),
   )
   if (!item) return null
 
