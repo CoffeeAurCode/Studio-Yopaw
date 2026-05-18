@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { randomUUID } from 'crypto'
 import { Resend } from 'resend'
 import { square, getLocationId, stripBom } from './_square.js'
-import { MAX_SEATS } from './_config.js'
+import { getMaxSeats } from './_config.js'
 
 const resend = new Resend(stripBom(process.env.RESEND_API_KEY ?? ''))
 
@@ -61,7 +61,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const taken = (slotBookings.data ?? []).filter(
       b => b.startAt === startAt && b.status !== 'CANCELLED'
     ).length
-    if (taken >= MAX_SEATS) {
+    if (taken >= getMaxSeats()) {
       return res.status(409).json({ error: 'This class is full' })
     }
 
@@ -94,7 +94,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // 5. Send lead notification email
     await resend.emails.send({
-      from: 'Studio Yopaw <noreply@studio-yopaw.com>',
+      from: stripBom(process.env.RESEND_FROM_EMAIL ?? 'Studio Yopaw <noreply@studio-yopaw.com>'),
       to: stripBom(process.env.LEAD_NOTIFY_EMAIL ?? ''),
       subject: `New Booking — ${givenName} ${familyName}`,
       html: `

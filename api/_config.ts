@@ -1,18 +1,17 @@
-export const MAX_SEATS = 20
+export function getMaxSeats(): number {
+  return Number(process.env.SQUARE_MAX_SEATS ?? 20)
+}
 
-// Only show these class start times (Montreal / ET timezone).
-// Handles DST automatically via Intl — no hardcoded UTC offsets.
-export const ALLOWED_CLASS_TIMES = new Set(['10:30', '12:00', '13:30', '15:00'])
+const DEFAULT_CLASS_TIMES = new Set(['10:30', '12:00', '13:30', '15:00'])
 
-// Scheduled puppy yoga session dates (YYYY-MM-DD, Montreal local).
-// Update this list whenever new sessions are added in the Square Dashboard.
-export const ALLOWED_CLASS_DATES = new Set([
-  '2026-06-14',
-  '2026-06-21',
-  '2026-06-28',
-  '2026-07-04',
-  '2026-07-05',
-])
+// Returns allowed start times in Montreal local time (e.g. "10:30").
+// Defaults to the four studio slots; override via SQUARE_CLASS_TIMES env var.
+export function getClassTimes(): Set<string> {
+  const raw = process.env.SQUARE_CLASS_TIMES?.trim()
+  if (!raw) return DEFAULT_CLASS_TIMES
+  const times = raw.split(',').map(t => t.trim()).filter(Boolean)
+  return times.length > 0 ? new Set(times) : DEFAULT_CLASS_TIMES
+}
 
 export function slotMontrealTime(startAt: string): string {
   const parts = new Intl.DateTimeFormat('en-CA', {

@@ -20,7 +20,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     await resend.emails.send({
-      from: 'Studio Yopaw <noreply@studio-yopaw.com>',
+      from: stripBom(process.env.RESEND_FROM_EMAIL ?? 'Studio Yopaw <noreply@studio-yopaw.com>'),
       to: stripBom(process.env.LEAD_NOTIFY_EMAIL ?? ''),
       subject: `New Inquiry — ${fullName} (${classType})`,
       html: `

@@ -1,6 +1,36 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { square, getLocationId } from './_square.js'
-import { MAX_SEATS, ALLOWED_CLASS_TIMES, ALLOWED_CLASS_DATES, slotMontrealTime } from './_config.js'
+import { getMaxSeats, getClassTimes, slotMontrealTime } from './_config.js'
+
+const SCHEDULE_CATEGORY = 'class schedule'
+const SCHEDULE_ITEM = 'Class Session Dates'
+
+/** Reads allowed session dates from Square Catalog (pushed by scripts/push-schedule.ts).
+ *  Returns null if no schedule is found — availability is unfiltered in that case. */
+async function getAllowedDates(): Promise<Set<string> | null> {
+  const catResp = await square.catalog.list({ types: ['CATEGORY'] })
+  const cat = (catResp.objects ?? []).find(
+    o => o.type === 'CATEGORY' && !o.isDeleted && o.categoryData?.name?.toLowerCase() === SCHEDULE_CATEGORY,
+  )
+  if (!cat) return null
+
+  const itemResp = await square.catalog.list({ types: ['ITEM'] })
+  const item = (itemResp.objects ?? []).find(
+    o =>
+      o.type === 'ITEM' &&
+      !o.isDeleted &&
+      o.itemData?.name === SCHEDULE_ITEM &&
+      (o.itemData?.categories ?? []).some(c => c.id === cat.id),
+  )
+  if (!item) return null
+
+  const dates = new Set(
+    (item.itemData?.variations ?? [])
+      .filter(v => !v.isDeleted && /^\d{4}-\d{2}-\d{2}$/.test(v.itemVariationData?.name ?? ''))
+      .map(v => v.itemVariationData!.name!),
+  )
+  return dates.size > 0 ? dates : null
+}
 
 /** Split [startDate, endDate] into ≤30-day chunks to stay within Square's 32-day limit. */
 function dateChunks(startDate: string, endDate: string): Array<{ start: string; end: string }> {
@@ -42,7 +72,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const chunks = dateChunks(startDate, endDate)
 
-    const [chunkResults, bookingChunkResults] = await Promise.all([
+    // Fetch schedule + availability + existing bookings in parallel
+    const [allowedDates, chunkResults, bookingChunkResults] = await Promise.all([
+      getAllowedDates(),
       Promise.all(
         chunks.map(chunk =>
           square.bookings.searchAvailability({
@@ -70,22 +102,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ),
     ])
 
+    const allowedTimes = getClassTimes()
     const allAvailabilities = chunkResults.flatMap(r => r.availabilities ?? [])
 
     const bookingCounts = new Map<string, number>()
     for (const result of bookingChunkResults) {
       for (const booking of result.data ?? []) {
-        if (booking.startAt && booking.status !== 'CANCELLED') {
+        if (booking.startAt && booking.status === 'ACCEPTED') {
           bookingCounts.set(booking.startAt, (bookingCounts.get(booking.startAt) ?? 0) + 1)
         }
       }
     }
 
+    const maxSeats = getMaxSeats()
     const availabilities = allAvailabilities
-      .filter(slot => slot.startAt && ALLOWED_CLASS_DATES.has(slot.startAt.slice(0, 10)) && ALLOWED_CLASS_TIMES.has(slotMontrealTime(slot.startAt)))
+      .filter(slot => {
+        if (!slot.startAt) return false
+        if (allowedDates && !allowedDates.has(slot.startAt.slice(0, 10))) return false
+        if (!allowedTimes.has(slotMontrealTime(slot.startAt))) return false
+        return true
+      })
       .map(slot => ({
         startAt: slot.startAt!,
-        seatsRemaining: MAX_SEATS - (bookingCounts.get(slot.startAt!) ?? 0),
+        seatsRemaining: maxSeats - (bookingCounts.get(slot.startAt!) ?? 0),
       }))
       .filter(slot => slot.seatsRemaining > 0)
 
