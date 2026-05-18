@@ -53,17 +53,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const customerIds = [...new Set(allDayBookings.map(b => b.customerId!))]
-    const customers = await Promise.all(
+    const customerResults = await Promise.allSettled(
       customerIds.map(id => square.customers.get({ customerId: id })),
     )
     const customerMap = new Map(
-      customers.map(r => [
-        r.customer!.id!,
-        {
-          en: (r.customer!.givenName ?? '').trim(),
-          fr: (r.customer!.familyName ?? '').trim(),
-        },
-      ]),
+      customerResults
+        .filter(
+          (r): r is PromiseFulfilledResult<Awaited<ReturnType<typeof square.customers.get>>> =>
+            r.status === 'fulfilled' && !!r.value.customer?.id,
+        )
+        .map(r => [
+          r.value.customer!.id!,
+          {
+            en: (r.value.customer!.givenName ?? '').trim(),
+            fr: (r.value.customer!.familyName ?? '').trim(),
+          },
+        ]),
     )
 
     const schedule: Record<string, { breed: { en: string; fr: string }; serviceIds: string[] }[]> = {}
