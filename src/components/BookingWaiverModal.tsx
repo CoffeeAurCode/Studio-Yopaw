@@ -13,7 +13,7 @@ function WaiverContentFr() {
   return (
     <>
       <h2 id="waiver-modal-title" className="waiver-modal-title">
-        Décharge et politique de remboursement
+        Décharge de responsabilité
       </h2>
 
       <section className="waiver-modal-section">
@@ -120,64 +120,6 @@ function WaiverContentFr() {
           Je reconnais avoir lu attentivement la présente décharge, en comprendre le contenu et accepter librement l&apos;ensemble des conditions.
         </p>
       </section>
-
-      <hr style={{ margin: '32px 0', border: 'none', borderTop: '1px solid rgba(244,114,182,0.25)' }} />
-
-      <h2 className="waiver-modal-title" style={{ marginBottom: '24px' }}>
-        Politique de remboursement – Studio Yopaw
-      </h2>
-
-      <section className="waiver-modal-section">
-        <h3 className="waiver-modal-section-title">1. Paiement</h3>
-        <p>
-          Le paiement complet est requis pour confirmer la réservation de toute séance ou événement offert par Studio Yopaw.
-        </p>
-      </section>
-
-      <section className="waiver-modal-section">
-        <h3 className="waiver-modal-section-title">2. Annulation par le client</h3>
-        <p>
-          Les clients peuvent annuler leur réservation sans pénalité, à condition que Studio Yopaw soit avisé au moins 72 heures avant le début de la séance.
-        </p>
-        <p>Dans ce cas, le client peut choisir entre :</p>
-        <ul className="waiver-modal-list">
-          <li>un remboursement complet au mode de paiement original</li>
-          <li>un crédit applicable à une séance future</li>
-        </ul>
-        <p>Toute annulation effectuée moins de 72 heures avant la séance est finale et non remboursable.</p>
-      </section>
-
-      <section className="waiver-modal-section">
-        <h3 className="waiver-modal-section-title">3. Retards et absences</h3>
-        <p>
-          Les participants doivent se présenter à l&apos;heure prévue. Studio Yopaw recommande fortement d&apos;arriver 15 minutes à l&apos;avance.
-        </p>
-        <p>
-          Tout retard de 15 minutes ou plus peut être considéré comme une absence et entraîner l&apos;annulation de la participation ainsi que la perte totale du montant payé, sans remboursement ni crédit. Toute absence sans préavis est également non remboursable.
-        </p>
-      </section>
-
-      <section className="waiver-modal-section">
-        <h3 className="waiver-modal-section-title">4. Annulation par Studio Yopaw</h3>
-        <p>
-          Si Studio Yopaw doit annuler une séance ou un événement pour des raisons indépendantes de sa volonté, le client recevra un remboursement complet ou un crédit complet applicable à une séance future, à son choix. En plus du remboursement ou du crédit, Studio Yopaw offrira un crédit supplémentaire équivalant à 25 % de la valeur de la séance.
-        </p>
-      </section>
-
-      <section className="waiver-modal-section">
-        <h3 className="waiver-modal-section-title">5. Acceptation</h3>
-        <p>
-          En procédant au paiement ou en réservant une séance, le client reconnaît avoir lu, compris et accepté la présente politique de remboursement.
-        </p>
-      </section>
-
-      <section className="waiver-modal-section">
-        <h3 className="waiver-modal-section-title">6. Soumettre une demande de remboursement</h3>
-        <p>
-          Pour toute demande conforme aux délais prévus dans cette politique, veuillez communiquer avec Studio Yopaw à :{' '}
-          <a href="mailto:studioyopaw@gmail.com" style={{ color: 'var(--sage-dark)' }}>studioyopaw@gmail.com</a>
-        </p>
-      </section>
     </>
   )
 }
@@ -186,13 +128,13 @@ function WaiverContentEn() {
   return (
     <>
       <h2 id="waiver-modal-title" className="waiver-modal-title">
-        Waiver and Refund Policy
+        Liability Waiver
       </h2>
 
       <section className="waiver-modal-section">
         <h3 className="waiver-modal-section-title">1. Acknowledgment of Risks</h3>
         <p>
-          I acknowledge that my participation in activities organized by Yopaw Studio, including but not limited to puppy yoga, interactions with animals, and any related activities, involves certain inherent, foreseeable, or unforeseeable risks.
+          I acknowledge that my participation in activities organized by Studio Topaw, including but not limited to puppy yoga, interactions with animals, and any related activities, involves certain inherent, foreseeable, or unforeseeable risks.
         </p>
         <p>These risks include, but are not limited to:</p>
         <ul className="waiver-modal-list">
@@ -204,7 +146,7 @@ function WaiverContentEn() {
           <li>possible transmission of illnesses or bacteria despite sanitary measures in place</li>
         </ul>
         <p>
-          I understand that, despite all reasonable precautions taken by Yopaw Studio, it is impossible to completely eliminate all risks.
+          I understand that, despite all reasonable precautions taken by Studio Topaw, it is impossible to completely eliminate all risks.
         </p>
       </section>
 
@@ -219,20 +161,20 @@ function WaiverContentEn() {
         <h3 className="waiver-modal-section-title">3. Compliance with Rules and Instructions</h3>
         <p>I agree to comply at all times with:</p>
         <ul className="waiver-modal-list">
-          <li>the instructions provided by Yopaw Studio</li>
+          <li>the instructions provided by Studio Topaw</li>
           <li>all safety rules</li>
           <li>all animal welfare guidelines</li>
           <li>all interaction limits imposed regarding the puppies</li>
         </ul>
         <p>
-          I understand that Yopaw Studio may immediately terminate my participation without refund if my behavior is deemed dangerous, disrespectful, or inappropriate.
+          I understand that Studio Topaw may immediately terminate my participation without refund if my behavior is deemed dangerous, disrespectful, or inappropriate.
         </p>
       </section>
 
       <section className="waiver-modal-section">
         <h3 className="waiver-modal-section-title">4. Release of Liability</h3>
         <p>
-          In consideration of my participation in activities organized by Yopaw Studio, I voluntarily waive and release any claim, lawsuit, action, or demand against Yopaw Studio, its owners, directors, employees, instructors, volunteers, partners, breeders, and representatives for any damage, injury, loss, accident, or harm that may occur during or as a result of my participation.
+          In consideration of my participation in activities organized by Studio Topaw, I voluntarily waive and release any claim, lawsuit, action, or demand against Studio Topaw, its owners, directors, employees, instructors, volunteers, partners, breeders, and representatives for any damage, injury, loss, accident, or harm that may occur during or as a result of my participation.
         </p>
         <p>This release applies, in particular, to:</p>
         <ul className="waiver-modal-list">
@@ -244,7 +186,7 @@ function WaiverContentEn() {
           <li>accidents occurring at the activity location</li>
         </ul>
         <p>
-          However, this waiver does not apply in cases of gross negligence or willful misconduct by Yopaw Studio.
+          However, this waiver does not apply in cases of gross negligence or willful misconduct by Studio Topaw.
         </p>
       </section>
 
@@ -262,7 +204,7 @@ function WaiverContentEn() {
       <section className="waiver-modal-section">
         <h3 className="waiver-modal-section-title">6. Emergency Medical Authorization</h3>
         <p>
-          In the event of an emergency, I authorize Yopaw Studio to contact emergency medical services and to take any reasonable measures necessary to ensure my safety.
+          In the event of an emergency, I authorize Studio Topaw to contact emergency medical services and to take any reasonable measures necessary to ensure my safety.
         </p>
         <p>Any medical or transportation costs remain my responsibility.</p>
       </section>
@@ -270,7 +212,7 @@ function WaiverContentEn() {
       <section className="waiver-modal-section">
         <h3 className="waiver-modal-section-title">7. Use of Image and Likeness</h3>
         <p>
-          I authorize Yopaw Studio to use any photographs or videos taken during the activity for promotional, advertising, or social media purposes, without financial compensation.
+          I authorize Studio Topaw to use any photographs or videos taken during the activity for promotional, advertising, or social media purposes, without financial compensation.
         </p>
       </section>
 
@@ -285,64 +227,6 @@ function WaiverContentEn() {
         <h3 className="waiver-modal-section-title">9. Acceptance</h3>
         <p>
           I acknowledge that I have carefully read this waiver, understand its contents, and freely accept all of its terms and conditions.
-        </p>
-      </section>
-
-      <hr style={{ margin: '32px 0', border: 'none', borderTop: '1px solid rgba(244,114,182,0.25)' }} />
-
-      <h2 className="waiver-modal-title" style={{ marginBottom: '24px' }}>
-        Refund Policy – Yopaw Studio
-      </h2>
-
-      <section className="waiver-modal-section">
-        <h3 className="waiver-modal-section-title">1. Payment</h3>
-        <p>
-          Full payment is required to confirm the reservation of any session or event offered by Yopaw Studio.
-        </p>
-      </section>
-
-      <section className="waiver-modal-section">
-        <h3 className="waiver-modal-section-title">2. Cancellation by the Client</h3>
-        <p>
-          Clients may cancel their reservation without penalty provided that Yopaw Studio is notified at least 72 hours before the start of the session.
-        </p>
-        <p>In such cases, the client may choose between:</p>
-        <ul className="waiver-modal-list">
-          <li>a full refund issued to the original method of payment</li>
-          <li>a credit applicable toward a future session</li>
-        </ul>
-        <p>Any cancellation made less than 72 hours before the start of the session is final and non-refundable.</p>
-      </section>
-
-      <section className="waiver-modal-section">
-        <h3 className="waiver-modal-section-title">3. Late Arrivals and No-Shows</h3>
-        <p>
-          Participants must arrive at the scheduled time. Yopaw Studio strongly recommends arriving 15 minutes early.
-        </p>
-        <p>
-          Any delay of 15 minutes or more may be considered a no-show and may result in cancellation of participation and full forfeiture of the amount paid, without refund or credit. Any absence without prior notice is also non-refundable.
-        </p>
-      </section>
-
-      <section className="waiver-modal-section">
-        <h3 className="waiver-modal-section-title">4. Cancellation by Yopaw Studio</h3>
-        <p>
-          If Yopaw Studio must cancel a session or event for reasons beyond its control, the client will receive a full refund or a full credit toward a future session, at the client&apos;s choice. In addition, Yopaw Studio will offer an additional credit equal to 25% of the session value.
-        </p>
-      </section>
-
-      <section className="waiver-modal-section">
-        <h3 className="waiver-modal-section-title">5. Acceptance</h3>
-        <p>
-          By proceeding with payment or booking a session, the client acknowledges having read, understood, and accepted this refund policy.
-        </p>
-      </section>
-
-      <section className="waiver-modal-section">
-        <h3 className="waiver-modal-section-title">6. Submitting a Refund Request</h3>
-        <p>
-          For any modification or request that complies with the timelines outlined in this policy, please contact Yopaw Studio at:{' '}
-          <a href="mailto:studioyopaw@gmail.com" style={{ color: 'var(--sage-dark)' }}>studioyopaw@gmail.com</a>
         </p>
       </section>
     </>

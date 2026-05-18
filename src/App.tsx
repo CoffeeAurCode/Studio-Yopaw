@@ -7,6 +7,7 @@ import { Navbar } from './components/Navbar'
 import { Footer } from './components/Footer'
 import { BookingWaiverModal } from './components/BookingWaiverModal'
 import { RefundPolicyPage } from './pages/RefundPolicyPage'
+import { WaiverPage } from './pages/WaiverPage'
 import { useSquareAvailability, type SquareSlot } from './hooks/useSquareAvailability'
 import { useBreedSchedule } from './hooks/useBreedSchedule'
 import { SQUARE_SERVICE_VARIATIONS } from './lib/squareServices'
@@ -1613,6 +1614,7 @@ function normalizeSitePathname(): string {
 export default function App() {
   const path = normalizeSitePathname()
   if (path === '/refund-policy' || path === '/politique-remboursement') return <RefundPolicyPage />
+  if (path === '/waiver' || path === '/renonciation') return <WaiverPage />
 
   return <MarketingSite />
 }
