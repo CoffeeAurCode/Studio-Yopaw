@@ -1225,6 +1225,23 @@ h2 em { font-style: italic; color: var(--sage); }
 }
 .pricing-payment-security svg { flex-shrink: 0; color: #16a34a; }
 
+/* ── Square card widget (vanilla SDK) ─────────────────── */
+.sq-card-widget {
+  margin-top: 0.5rem;
+}
+
+#sq-card-container {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* The Square iframe renders inside #sq-card-container.
+   The iframe itself gets width:100% automatically from the SDK. */
+#sq-card-container iframe {
+  border-radius: 12px;
+}
+
+
 .pricing-waiver-age-note {
   margin: -12px 0 24px;
   padding-left: calc(1.125rem + 12px);

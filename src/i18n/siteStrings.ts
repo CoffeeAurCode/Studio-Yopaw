@@ -109,10 +109,6 @@ export interface SiteStrings {
   pricingFeat5: string
   pricingHeaderSummary: string
   pricingAskClassType: string
-  pricingAskMat: string
-  pricingMatYes: string
-  pricingMatNo: string
-  pricingMatHelper: string
   pricingAskPrivateGroupSize: string
   pricingPrivateGroupMaxHint: string
   pricingPrivateQtyDecAria: string
@@ -315,15 +311,11 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     pricingDropInRow: '$46 + taxes per session',
     pricingFeat1: '✓ 60-minute activity',
     pricingFeat2: '✓ Gentle flow accessible to all',
-    pricingFeat3: '✓ Yoga mat rental on-site ($5)',
+    pricingFeat3: '',
     pricingFeat4: '',
     pricingFeat5: '',
     pricingHeaderSummary: '$46 + taxes · Per session',
     pricingAskClassType: 'What kind of class are you looking for?',
-    pricingAskMat: 'Do you have your own yoga mat?',
-    pricingMatYes: "Yes, I'll bring mine",
-    pricingMatNo: "No, I'll rent one on-site",
-    pricingMatHelper: 'Yoga mat rental available on-site for $5',
     pricingAskPrivateGroupSize: 'How many people will be included in your group?',
     pricingPrivateGroupMaxHint: 'Maximum 20 participants per session.',
     pricingPrivateQtyDecAria: 'Decrease number of participants',
@@ -577,15 +569,11 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     pricingDropInRow: '46 $ + taxes par séance',
     pricingFeat1: "✓ Durée de l'activité : 60 minutes",
     pricingFeat2: '✓ Flow doux accessible à tous',
-    pricingFeat3: '✓ Location de tapis sur place (5 $)',
+    pricingFeat3: '',
     pricingFeat4: '',
     pricingFeat5: '',
     pricingHeaderSummary: '46 $ + taxes · À la séance',
     pricingAskClassType: 'Quel type de cours recherchez-vous ?',
-    pricingAskMat: 'Avez-vous votre propre tapis de yoga ?',
-    pricingMatYes: 'Oui, j’apporte le mien',
-    pricingMatNo: 'Non, je louerai sur place',
-    pricingMatHelper: 'Location de tapis sur place pour 5 $',
     pricingAskPrivateGroupSize:
       'Combien de personnes seront incluses dans votre groupe ?',
     pricingPrivateGroupMaxHint: 'Maximum 20 participants par séance.',

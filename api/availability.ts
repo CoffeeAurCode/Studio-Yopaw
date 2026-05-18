@@ -115,18 +115,66 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const maxSeats = getMaxSeats()
-    const availabilities = allAvailabilities
-      .filter(slot => {
-        if (!slot.startAt) return false
-        if (allowedDates && !allowedDates.has(slot.startAt.slice(0, 10))) return false
-        if (!allowedTimes.has(slotMontrealTime(slot.startAt))) return false
-        return true
-      })
-      .map(slot => ({
-        startAt: slot.startAt!,
-        seatsRemaining: maxSeats - (bookingCounts.get(slot.startAt!) ?? 0),
-      }))
-      .filter(slot => slot.seatsRemaining > 0)
+
+    // Build a map of slots Square already knows about
+    const squareSlotMap = new Map<string, number>()
+    for (const slot of allAvailabilities) {
+      if (!slot.startAt) continue
+      if (allowedDates && !allowedDates.has(slot.startAt.slice(0, 10))) continue
+      if (!allowedTimes.has(slotMontrealTime(slot.startAt))) continue
+      const booked = bookingCounts.get(slot.startAt) ?? 0
+      squareSlotMap.set(slot.startAt, maxSeats - booked)
+    }
+
+    // Determine the set of dates we need to cover
+    const coveredDates = new Set<string>()
+    for (const startAt of squareSlotMap.keys()) {
+      coveredDates.add(startAt.slice(0, 10))
+    }
+    // Also include all explicitly allowed dates that fall within [startDate, endDate]
+    if (allowedDates) {
+      for (const d of allowedDates) {
+        if (d >= startDate && d <= endDate) coveredDates.add(d)
+      }
+    }
+
+    // For each covered date, ensure every configured time slot is present
+    const availabilities: Array<{ startAt: string; seatsRemaining: number }> = []
+    const sortedDates = [...coveredDates].sort()
+    const allowedTimesArr = [...allowedTimes].sort()
+
+    for (const dateIso of sortedDates) {
+      for (const timeStr of allowedTimesArr) {
+        // Build a Montreal-local datetime and convert to UTC ISO
+        // We look for an existing Square slot at this time first
+        const existingKey = [...squareSlotMap.keys()].find(
+          k => k.slice(0, 10) === dateIso && slotMontrealTime(k) === timeStr,
+        )
+        if (existingKey) {
+          const remaining = squareSlotMap.get(existingKey)!
+          if (remaining > 0) {
+            availabilities.push({ startAt: existingKey, seatsRemaining: remaining })
+          }
+        } else {
+          // Generate a synthetic slot: convert Montreal local time to UTC
+          const [h, m] = timeStr.split(':').map(Number)
+          // Compute offset by comparing local parse with UTC
+          const utcGuess = new Date(`${dateIso}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00Z`)
+          // Check what Montreal time that UTC instant maps to
+          const checkTime = slotMontrealTime(utcGuess.toISOString())
+          const [ch, cm] = checkTime.split(':').map(Number)
+          const offsetMinutes = (h * 60 + m) - (ch * 60 + cm)
+          const corrected = new Date(utcGuess.getTime() + offsetMinutes * 60_000)
+          const syntheticStartAt = corrected.toISOString().replace(/\.\d{3}Z$/, 'Z')
+
+          const booked = bookingCounts.get(syntheticStartAt) ?? 0
+          const remaining = maxSeats - booked
+          if (remaining > 0) {
+            availabilities.push({ startAt: syntheticStartAt, seatsRemaining: remaining })
+          }
+        }
+      }
+    }
 
     return res.status(200).json({ availabilities })
   } catch (err) {

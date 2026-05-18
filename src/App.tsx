@@ -1,5 +1,5 @@
-import { useState, useEffect, useLayoutEffect, useRef, useMemo, type FormEvent } from 'react'
-import { CreditCard, PaymentForm } from 'react-square-web-payments-sdk'
+import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback, type FormEvent } from 'react'
+import { useSquareCard } from './hooks/useSquareCard'
 import './App.css'
 import type { Lang } from './i18n/siteStrings'
 import { interpolate, useI18n } from './i18n/LanguageProvider'
@@ -10,10 +10,11 @@ import { RefundPolicyPage } from './pages/RefundPolicyPage'
 import { WaiverPage } from './pages/WaiverPage'
 import { useSquareAvailability, type SquareSlot } from './hooks/useSquareAvailability'
 import { useBreedSchedule } from './hooks/useBreedSchedule'
-import { SQUARE_SERVICE_VARIATIONS } from './lib/squareServices'
+import { SQUARE_SERVICE_VARIATIONS, computeTaxBreakdown } from './lib/squareServices'
 
-const SQUARE_APP_ID = (import.meta.env.VITE_SQUARE_APP_ID as string | undefined) ?? ''
-const SQUARE_LOCATION_ID = (import.meta.env.VITE_SQUARE_LOCATION_ID as string | undefined) ?? ''
+const stripEnv = (v: string | undefined): string => (v ?? '').replace(/^\uFEFF/, '').trim()
+const SQUARE_APP_ID = stripEnv(import.meta.env.VITE_SQUARE_APP_ID as string | undefined)
+const SQUARE_LOCATION_ID = stripEnv(import.meta.env.VITE_SQUARE_LOCATION_ID as string | undefined)
 
 // ── SVG Icons ──────────────────────────────────────────────
 
@@ -304,6 +305,12 @@ function ExperienceSection() {
 
 type YogaStyle = 'yin' | 'gentle'
 
+function fmtCAD(cents: number, lang: Lang): string {
+  return lang === 'fr'
+    ? `${(cents / 100).toFixed(2)} $`
+    : `$${(cents / 100).toFixed(2)}`
+}
+
 function PricingStepBack({ onClick }: { onClick: () => void }) {
   const { s } = useI18n()
   return (
@@ -318,6 +325,80 @@ function PricingStepBack({ onClick }: { onClick: () => void }) {
         />
       </svg>
     </button>
+  )
+}
+
+/** Vanilla Square card-form widget — works perfectly with conditional rendering */
+function SquareCardWidget({
+  appId,
+  locationId,
+  loading,
+  buttonLabel,
+  onTokenize,
+}: {
+  appId: string
+  locationId: string
+  loading: boolean
+  buttonLabel: string
+  onTokenize: (nonce: string) => void
+}) {
+  const { containerRef, tokenize, loading: sdkLoading, ready, sdkError } = useSquareCard(appId, locationId)
+  const [tokenizeError, setTokenizeError] = useState<string | null>(null)
+
+  const handlePay = useCallback(async () => {
+    setTokenizeError(null)
+    const result = await tokenize()
+    if ('nonce' in result) {
+      onTokenize(result.nonce)
+    } else {
+      setTokenizeError(result.error)
+    }
+  }, [tokenize, onTokenize])
+
+  if (!appId || !locationId) {
+    return (
+      <p className="pricing-helper-text">
+        Square credentials not configured. Add <code>VITE_SQUARE_APP_ID</code> to your environment.
+      </p>
+    )
+  }
+
+  return (
+    <div className="sq-card-widget">
+      {sdkLoading && (
+        <p className="pricing-helper-text" style={{ textAlign: 'center', padding: '1rem 0' }}>
+          Loading payment form…
+        </p>
+      )}
+      <div
+        id="sq-card-container"
+        ref={containerRef}
+        style={{
+          minHeight: ready ? undefined : (sdkLoading ? '0' : '44px'),
+          marginBottom: ready ? '1rem' : 0,
+        }}
+      />
+      {sdkError && (
+        <p style={{ color: 'var(--rose, #e11d48)', fontSize: '0.9rem', marginBottom: '0.75rem' }}>
+          {sdkError}
+        </p>
+      )}
+      {tokenizeError && (
+        <p style={{ color: 'var(--rose, #e11d48)', fontSize: '0.9rem', marginBottom: '0.75rem' }}>
+          {tokenizeError}
+        </p>
+      )}
+      {ready && (
+        <button
+          type="button"
+          className="btn-primary btn-lg pricing-submit"
+          disabled={loading}
+          onClick={() => { void handlePay() }}
+        >
+          {buttonLabel}
+        </button>
+      )}
+    </div>
   )
 }
 
@@ -336,7 +417,7 @@ function PricingSection() {
 
   type Flow =
     | { kind: 'chooseClass' }
-    | { kind: 'public'; step: 'mat' | 'people' | 'date' | 'contact' | 'payment'; yoga: YogaStyle }
+    | { kind: 'public'; step: 'people' | 'date' | 'contact' | 'payment'; yoga: YogaStyle }
     | { kind: 'publicSuccess'; source: 'regular' | 'private' }
     | { kind: 'corporate'; step: 'people' | 'date' | 'contact' | 'payment' }
     | { kind: 'corporateSuccess' }
@@ -353,7 +434,6 @@ function PricingSection() {
   const [corpEmail, setCorpEmail] = useState('')
   const [corpPhone, setCorpPhone] = useState('')
   const [privateGroupCount, setPrivateGroupCount] = useState('')
-  const [needsMatRental, setNeedsMatRental] = useState(false)
   const [waiverAccepted, setWaiverAccepted] = useState(false)
   const [waiverModalOpen, setWaiverModalOpen] = useState(false)
   const [bookingLoading, setBookingLoading] = useState(false)
@@ -424,10 +504,9 @@ function PricingSection() {
     pendingPricingStepScrollRef.current = true
   }
 
-  /** Mat + session-date steps: align card top with viewport (readable under navbar via scroll-margin). Other steps keep centered. */
   const pricingCardScrollBlock = (): ScrollLogicalPosition => {
     if (
-      (flow.kind === 'public' && (flow.step === 'mat' || flow.step === 'people' || flow.step === 'date')) ||
+      (flow.kind === 'public' && (flow.step === 'people' || flow.step === 'date')) ||
       (flow.kind === 'corporate' && (flow.step === 'people' || flow.step === 'date'))
     )
       return 'start'
@@ -466,7 +545,6 @@ function PricingSection() {
     if (flow.kind === 'chooseClass') return 25
     if (flow.kind === 'publicSuccess') return 100
     if (flow.kind === 'public') {
-      if (flow.step === 'mat') return 45
       if (flow.step === 'people') return 45
       if (flow.step === 'date') return 62
       if (flow.step === 'contact') return 80
@@ -491,10 +569,6 @@ function PricingSection() {
       return
     }
     if (flow.kind === 'public') {
-      if (flow.step === 'mat') {
-        setFlow({ kind: 'chooseClass' })
-        return
-      }
       if (flow.step === 'people') {
         setPrivateGroupCount('')
         setFlow({ kind: 'chooseClass' })
@@ -502,8 +576,11 @@ function PricingSection() {
       }
       if (flow.step === 'date') {
         setPendingSessionIso(null)
-        const backStep: 'mat' | 'people' = flow.yoga === 'gentle' ? 'people' : 'mat'
-        setFlow({ kind: 'public', step: backStep, yoga: flow.yoga })
+        if (flow.yoga === 'gentle') {
+          setFlow({ kind: 'public', step: 'people', yoga: flow.yoga })
+        } else {
+          setFlow({ kind: 'chooseClass' })
+        }
         setSelectedSessionIso(null)
         setSelectedTimeSlotId(null)
         return
@@ -565,7 +642,7 @@ function PricingSection() {
       setFlow({ kind: 'corporate', step: 'people' })
       return
     }
-    const firstStep = id === 'gentle' ? 'people' : 'mat'
+    const firstStep = id === 'gentle' ? 'people' : 'date'
     setFlow({ kind: 'public', step: firstStep, yoga: id })
     if (id === 'gentle') setPrivateGroupCount('2')
     else setPrivateGroupCount('')
@@ -590,19 +667,6 @@ function PricingSection() {
       if (prev.kind === 'corporate' && prev.step === 'people') return { ...prev, step: 'date' }
       return prev
     })
-    setSelectedSessionIso(null)
-    setPendingSessionIso(null)
-    setSelectedTimeSlotId(null)
-  }
-
-  const pickMat = (renting: boolean) => {
-    setNeedsMatRental(renting)
-    requestScrollPricingCardAfterAdvance()
-    setFlow(prev =>
-      prev.kind === 'public' && prev.step === 'mat'
-        ? { ...prev, step: 'date' }
-        : prev
-    )
     setSelectedSessionIso(null)
     setPendingSessionIso(null)
     setSelectedTimeSlotId(null)
@@ -633,7 +697,7 @@ function PricingSection() {
 
     let serviceInfo: typeof SQUARE_SERVICE_VARIATIONS[keyof typeof SQUARE_SERVICE_VARIATIONS]
     let givenName: string, familyName: string, bookingEmail: string, bookingPhone: string
-    let amountCents: number
+    let baseAmountCents: number
 
     if (flow.kind === 'corporate') {
       serviceInfo = SQUARE_SERVICE_VARIATIONS.corporate
@@ -643,7 +707,7 @@ function PricingSection() {
       bookingEmail = corpEmail
       bookingPhone = corpPhone
       const groupSize = Math.max(2, parseInt(privateGroupCount, 10) || 2)
-      amountCents = serviceInfo.amountCents * groupSize
+      baseAmountCents = serviceInfo.baseAmountCents * groupSize
     } else {
       serviceInfo = SQUARE_SERVICE_VARIATIONS[flow.yoga]
       const parts = fullName.trim().split(' ')
@@ -653,9 +717,9 @@ function PricingSection() {
       bookingPhone = phone
       if (flow.yoga === 'gentle') {
         const groupSize = Math.max(2, parseInt(privateGroupCount, 10) || 2)
-        amountCents = serviceInfo.amountCents * groupSize
+        baseAmountCents = serviceInfo.baseAmountCents * groupSize
       } else {
-        amountCents = serviceInfo.amountCents + (needsMatRental ? 500 : 0)
+        baseAmountCents = serviceInfo.baseAmountCents
       }
     }
 
@@ -673,7 +737,8 @@ function PricingSection() {
           teamMemberId: serviceInfo.teamMemberId,
           startAt: selectedTimeSlotId,
           cardNonce: nonce,
-          amountCents,
+          baseAmountCents,
+          serviceName: serviceInfo.serviceName,
         }),
       })
 
@@ -705,7 +770,6 @@ function PricingSection() {
     setEmail('')
     setPhone('')
     setPrivateGroupCount('')
-    setNeedsMatRental(false)
     setWaiverAccepted(false)
     setWaiverModalOpen(false)
     setBookingError(null)
@@ -756,8 +820,7 @@ function PricingSection() {
   )
 
   let showBack = false
-  if (flow.kind === 'public' && flow.step === 'mat') showBack = true
-  else if (flow.kind === 'public' && flow.step === 'people') showBack = true
+  if (flow.kind === 'public' && flow.step === 'people') showBack = true
   else if (flow.kind === 'public' && flow.step === 'date') showBack = true
   else if (flow.kind === 'public' && flow.step === 'contact') showBack = true
   else if (flow.kind === 'public' && flow.step === 'payment') showBack = true
@@ -859,21 +922,6 @@ function PricingSection() {
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {flow.kind === 'public' && flow.step === 'mat' && (
-              <div className="pricing-step-block">
-                <h3 className="pricing-step-title">{s.pricingAskMat}</h3>
-                <div className="pricing-choice-stack pricing-choice-stack--pair">
-                    <button type="button" className="pricing-choice-card" onClick={() => pickMat(true)}>
-                    {s.pricingMatYes}
-                  </button>
-                  <button type="button" className="pricing-choice-card" onClick={() => pickMat(false)}>
-                    {s.pricingMatNo}
-                  </button>
-                </div>
-                <p className="pricing-helper-text">{s.pricingMatHelper}</p>
               </div>
             )}
 
@@ -1016,9 +1064,14 @@ function PricingSection() {
                 {flow.yoga === 'gentle' ? (
                   <>
                     <p className="pricing-helper-text">
-                      {lang === 'fr'
-                        ? `Total : ${parseInt(privateGroupCount || '2', 10)} × 46 $ = ${parseInt(privateGroupCount || '2', 10) * 46} $ + taxes`
-                        : `Total: ${parseInt(privateGroupCount || '2', 10)} × $46 = $${parseInt(privateGroupCount || '2', 10) * 46} + taxes`}
+                      {(() => {
+                        const groupSize = Math.max(2, parseInt(privateGroupCount || '2', 10))
+                        const svc = SQUARE_SERVICE_VARIATIONS.gentle
+                        const { totalCents } = computeTaxBreakdown(svc.baseAmountCents * groupSize)
+                        return lang === 'fr'
+                          ? `Total : ${groupSize} × ${fmtCAD(svc.baseAmountCents, 'fr')} = ${fmtCAD(totalCents, 'fr')} (taxes incluses)`
+                          : `Total: ${groupSize} × ${fmtCAD(svc.baseAmountCents, 'en')} = ${fmtCAD(totalCents, 'en')} (taxes included)`
+                      })()}
                     </p>
                     <button type="submit" className="btn-primary btn-lg pricing-submit">
                       {lang === 'fr' ? 'Passer au paiement' : 'Proceed to payment'}
@@ -1089,54 +1142,46 @@ function PricingSection() {
                 <h3 className="pricing-step-title">
                   {lang === 'fr' ? 'Paiement sécurisé' : 'Secure Payment'}
                 </h3>
-                <div className="pricing-payment-summary">
-                  <div className="pricing-payment-summary-row">
-                    <span className="pricing-payment-summary-label">
-                      {flow.yoga === 'gentle'
-                        ? (lang === 'fr'
-                            ? `${parseInt(privateGroupCount || '2', 10)} × Événement privé`
-                            : `${parseInt(privateGroupCount || '2', 10)} × Private Event`)
-                        : (lang === 'fr' ? '1 × Cours de yoga avec chiots' : '1 × Puppy Yoga Class')}
-                    </span>
-                    <span className="pricing-payment-summary-amount">
-                      {flow.yoga === 'gentle'
-                        ? (lang === 'fr'
-                            ? `${parseInt(privateGroupCount || '2', 10) * 46} $`
-                            : `$${parseInt(privateGroupCount || '2', 10) * 46}`)
-                        : (lang === 'fr' ? '46 $' : '$46')}
-                    </span>
-                  </div>
-                  {flow.yoga !== 'gentle' && needsMatRental && (
-                    <div className="pricing-payment-summary-row">
-                      <span className="pricing-payment-summary-label">
-                        {lang === 'fr' ? '1 × Location de tapis' : '1 × Mat rental'}
-                      </span>
-                      <span className="pricing-payment-summary-amount">
-                        {lang === 'fr' ? '5 $' : '$5'}
-                      </span>
+                {(() => {
+                  const groupSize = flow.yoga === 'gentle' ? Math.max(2, parseInt(privateGroupCount || '2', 10)) : 1
+                  const svc = SQUARE_SERVICE_VARIATIONS[flow.yoga]
+                  const baseCents = svc.baseAmountCents * groupSize
+                  const { gstCents, qstCents, totalCents } = computeTaxBreakdown(baseCents)
+                  return (
+                    <div className="pricing-payment-summary">
+                      <div className="pricing-payment-summary-row">
+                        <span className="pricing-payment-summary-label">
+                          {flow.yoga === 'gentle'
+                            ? (lang === 'fr'
+                                ? `${groupSize} × Événement privé`
+                                : `${groupSize} × Private Event`)
+                            : (lang === 'fr' ? '1 × Cours de yoga avec chiots' : '1 × Puppy Yoga Class')}
+                        </span>
+                        <span className="pricing-payment-summary-amount">{fmtCAD(baseCents, lang)}</span>
+                      </div>
+                      <div className="pricing-payment-summary-row">
+                        <span className="pricing-payment-summary-label">TPS / GST (5 %)</span>
+                        <span className="pricing-payment-summary-amount">{fmtCAD(gstCents, lang)}</span>
+                      </div>
+                      <div className="pricing-payment-summary-row">
+                        <span className="pricing-payment-summary-label">TVQ / QST (9.975 %)</span>
+                        <span className="pricing-payment-summary-amount">{fmtCAD(qstCents, lang)}</span>
+                      </div>
+                      <div className="pricing-payment-summary-row pricing-payment-summary-total">
+                        <span className="pricing-payment-summary-label">
+                          {lang === 'fr' ? 'Total' : 'Total'}
+                        </span>
+                        <span className="pricing-payment-summary-amount">{fmtCAD(totalCents, lang)}</span>
+                      </div>
+                      {selectedSessionIso && (
+                        <p className="pricing-payment-summary-meta">
+                          {formatLongSessionDate(selectedSessionIso, lang)}
+                          {selectedTimeSlotId && ` · ${formatSquareSlotTime(selectedTimeSlotId, lang)}`}
+                        </p>
+                      )}
                     </div>
-                  )}
-                  <div className="pricing-payment-summary-row pricing-payment-summary-total">
-                    <span className="pricing-payment-summary-label">
-                      {lang === 'fr' ? 'Total (+ taxes applicables)' : 'Total (+ applicable taxes)'}
-                    </span>
-                    <span className="pricing-payment-summary-amount">
-                      {flow.yoga === 'gentle'
-                        ? (lang === 'fr'
-                            ? `${parseInt(privateGroupCount || '2', 10) * 46} $ + taxes`
-                            : `$${parseInt(privateGroupCount || '2', 10) * 46} + taxes`)
-                        : (lang === 'fr'
-                            ? `${46 + (needsMatRental ? 5 : 0)} $ + taxes`
-                            : `$${46 + (needsMatRental ? 5 : 0)} + taxes`)}
-                    </span>
-                  </div>
-                  {selectedSessionIso && (
-                    <p className="pricing-payment-summary-meta">
-                      {formatLongSessionDate(selectedSessionIso, lang)}
-                      {selectedTimeSlotId && ` · ${formatSquareSlotTime(selectedTimeSlotId, lang)}`}
-                    </p>
-                  )}
-                </div>
+                  )
+                })()}
                 <div className="pricing-payment-security">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11.5C16.5 22.15 20 17.25 20 12V6l-8-4z" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" />
@@ -1151,27 +1196,15 @@ function PricingSection() {
                     {bookingError}
                   </p>
                 )}
-                {SQUARE_APP_ID ? (
-                  <PaymentForm
-                    applicationId={SQUARE_APP_ID}
-                    locationId={SQUARE_LOCATION_ID}
-                    cardTokenizeResponseReceived={(token) => {
-                      if (token.status === 'OK' && token.token) {
-                        void submitBookingWithPayment(token.token)
-                      }
-                    }}
-                  >
-                    <CreditCard>
-                      {bookingLoading
-                        ? (lang === 'fr' ? 'Traitement…' : 'Processing…')
-                        : s.pricingSubmitBookSpot}
-                    </CreditCard>
-                  </PaymentForm>
-                ) : (
-                  <p className="pricing-helper-text">
-                    Square credentials not configured. Add <code>VITE_SQUARE_APP_ID</code> to your environment.
-                  </p>
-                )}
+                <SquareCardWidget
+                  appId={SQUARE_APP_ID}
+                  locationId={SQUARE_LOCATION_ID}
+                  loading={bookingLoading}
+                  buttonLabel={bookingLoading
+                    ? (lang === 'fr' ? 'Traitement…' : 'Processing…')
+                    : s.pricingSubmitBookSpot}
+                  onTokenize={(nonce) => { void submitBookingWithPayment(nonce) }}
+                />
               </div>
             )}
 
@@ -1234,9 +1267,14 @@ function PricingSection() {
                   />
                 </div>
                 <p className="pricing-helper-text">
-                  {lang === 'fr'
-                    ? `Total : ${parseInt(privateGroupCount || '2', 10)} × 46 $ = ${parseInt(privateGroupCount || '2', 10) * 46} $ + taxes`
-                    : `Total: ${parseInt(privateGroupCount || '2', 10)} × $46 = $${parseInt(privateGroupCount || '2', 10) * 46} + taxes`}
+                  {(() => {
+                    const groupSize = Math.max(2, parseInt(privateGroupCount || '2', 10))
+                    const svc = SQUARE_SERVICE_VARIATIONS.corporate
+                    const { totalCents } = computeTaxBreakdown(svc.baseAmountCents * groupSize)
+                    return lang === 'fr'
+                      ? `Total : ${groupSize} × ${fmtCAD(svc.baseAmountCents, 'fr')} = ${fmtCAD(totalCents, 'fr')} (taxes incluses)`
+                      : `Total: ${groupSize} × ${fmtCAD(svc.baseAmountCents, 'en')} = ${fmtCAD(totalCents, 'en')} (taxes included)`
+                  })()}
                 </p>
                 <button type="submit" className="btn-primary btn-lg pricing-submit">
                   {lang === 'fr' ? 'Passer au paiement' : 'Proceed to payment'}
@@ -1249,36 +1287,43 @@ function PricingSection() {
                 <h3 className="pricing-step-title">
                   {lang === 'fr' ? 'Paiement sécurisé' : 'Secure Payment'}
                 </h3>
-                <div className="pricing-payment-summary">
-                  <div className="pricing-payment-summary-row">
-                    <span className="pricing-payment-summary-label">
-                      {lang === 'fr'
-                        ? `${parseInt(privateGroupCount || '2', 10)} × Expérience corporative`
-                        : `${parseInt(privateGroupCount || '2', 10)} × Corporate Experience`}
-                    </span>
-                    <span className="pricing-payment-summary-amount">
-                      {lang === 'fr'
-                        ? `${parseInt(privateGroupCount || '2', 10) * 46} $`
-                        : `$${parseInt(privateGroupCount || '2', 10) * 46}`}
-                    </span>
-                  </div>
-                  <div className="pricing-payment-summary-row pricing-payment-summary-total">
-                    <span className="pricing-payment-summary-label">
-                      {lang === 'fr' ? 'Total (+ taxes applicables)' : 'Total (+ applicable taxes)'}
-                    </span>
-                    <span className="pricing-payment-summary-amount">
-                      {lang === 'fr'
-                        ? `${parseInt(privateGroupCount || '2', 10) * 46} $ + taxes`
-                        : `$${parseInt(privateGroupCount || '2', 10) * 46} + taxes`}
-                    </span>
-                  </div>
-                  {selectedSessionIso && (
-                    <p className="pricing-payment-summary-meta">
-                      {formatLongSessionDate(selectedSessionIso, lang)}
-                      {selectedTimeSlotId && ` · ${formatSquareSlotTime(selectedTimeSlotId, lang)}`}
-                    </p>
-                  )}
-                </div>
+                {(() => {
+                  const groupSize = Math.max(2, parseInt(privateGroupCount || '2', 10))
+                  const baseCents = SQUARE_SERVICE_VARIATIONS.corporate.baseAmountCents * groupSize
+                  const { gstCents, qstCents, totalCents } = computeTaxBreakdown(baseCents)
+                  return (
+                    <div className="pricing-payment-summary">
+                      <div className="pricing-payment-summary-row">
+                        <span className="pricing-payment-summary-label">
+                          {lang === 'fr'
+                            ? `${groupSize} × Expérience corporative`
+                            : `${groupSize} × Corporate Experience`}
+                        </span>
+                        <span className="pricing-payment-summary-amount">{fmtCAD(baseCents, lang)}</span>
+                      </div>
+                      <div className="pricing-payment-summary-row">
+                        <span className="pricing-payment-summary-label">TPS / GST (5 %)</span>
+                        <span className="pricing-payment-summary-amount">{fmtCAD(gstCents, lang)}</span>
+                      </div>
+                      <div className="pricing-payment-summary-row">
+                        <span className="pricing-payment-summary-label">TVQ / QST (9.975 %)</span>
+                        <span className="pricing-payment-summary-amount">{fmtCAD(qstCents, lang)}</span>
+                      </div>
+                      <div className="pricing-payment-summary-row pricing-payment-summary-total">
+                        <span className="pricing-payment-summary-label">
+                          {lang === 'fr' ? 'Total' : 'Total'}
+                        </span>
+                        <span className="pricing-payment-summary-amount">{fmtCAD(totalCents, lang)}</span>
+                      </div>
+                      {selectedSessionIso && (
+                        <p className="pricing-payment-summary-meta">
+                          {formatLongSessionDate(selectedSessionIso, lang)}
+                          {selectedTimeSlotId && ` · ${formatSquareSlotTime(selectedTimeSlotId, lang)}`}
+                        </p>
+                      )}
+                    </div>
+                  )
+                })()}
                 <div className="pricing-payment-security">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11.5C16.5 22.15 20 17.25 20 12V6l-8-4z" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" />
@@ -1293,25 +1338,15 @@ function PricingSection() {
                     {bookingError}
                   </p>
                 )}
-                {SQUARE_APP_ID ? (
-                  <PaymentForm
-                    applicationId={SQUARE_APP_ID}
-                    locationId={SQUARE_LOCATION_ID}
-                    cardTokenizeResponseReceived={(token) => {
-                      if (token.status === 'OK' && token.token) {
-                        void submitBookingWithPayment(token.token)
-                      }
-                    }}
-                  >
-                    <CreditCard>
-                      {bookingLoading
-                        ? (lang === 'fr' ? 'Traitement…' : 'Processing…')
-                        : s.pricingSubmitBookSpot}
-                    </CreditCard>
-                  </PaymentForm>
-                ) : (
-                  <p className="pricing-helper-text">Square credentials not configured.</p>
-                )}
+                <SquareCardWidget
+                  appId={SQUARE_APP_ID}
+                  locationId={SQUARE_LOCATION_ID}
+                  loading={bookingLoading}
+                  buttonLabel={bookingLoading
+                    ? (lang === 'fr' ? 'Traitement…' : 'Processing…')
+                    : s.pricingSubmitBookSpot}
+                  onTokenize={(nonce) => { void submitBookingWithPayment(nonce) }}
+                />
               </div>
             )}
 

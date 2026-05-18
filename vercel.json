@@ -7,6 +7,6 @@
   },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!src/|node_modules/|@vite/|@fs/|@react-refresh|__vite|.*\\.(?:png|webp|mp4|svg|jpg|jpeg|gif|ico|woff|woff2|ttf|eot|json|css|js|map)$).*)", "destination": "/index.html" }
   ]
 }

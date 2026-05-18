@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "square:setup-taxes": "tsx --env-file=.env.local scripts/setup-square-taxes.ts",
+    "square:attach-taxes": "tsx --env-file=.env.local scripts/attach-square-taxes.ts"
   },
   "dependencies": {
     "@vercel/node": "^5.8.1",
@@ -19,6 +21,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "dotenv": "^16.0.0",
+    "tsx": "^4.0.0",
     "@tailwindcss/vite": "^4.3.0",
     "@types/node": "^24.12.2",
     "@types/react": "^19.2.14",
