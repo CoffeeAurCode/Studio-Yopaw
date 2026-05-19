@@ -136,12 +136,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ...(orderId ? { orderId } : {}),
     })
 
-    // 6. Send lead notification email
+    // 6. Send lead notification email (non-fatal — payment already succeeded)
     const totalDollars = (Number(chargeAmount) / 100).toFixed(2)
     const baseDollars = (baseAmountCents / 100).toFixed(2)
     const taxDollars = ((Number(chargeAmount) - baseAmountCents) / 100).toFixed(2)
 
-    await resend.emails.send({
+    resend.emails.send({
       from: stripBom(process.env.RESEND_FROM_EMAIL ?? 'Studio Yopaw <noreply@studio-yopaw.com>'),
       to: stripBom(process.env.LEAD_NOTIFY_EMAIL ?? ''),
       subject: `New Booking — ${givenName} ${familyName}`,
@@ -156,7 +156,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ${gstTaxId && qstTaxId ? `<p><strong>Taxes:</strong> $${taxDollars} CAD (TPS/GST + TVQ/QST)</p>` : ''}
         <p><strong>Total charged:</strong> $${totalDollars} CAD — ${payment!.status}</p>
       `,
-    })
+    }).catch(emailErr => console.error('booking: notification email failed (non-fatal)', emailErr))
 
     return res.status(200).json({ bookingId: booking!.id, paymentStatus: payment!.status })
   } catch (err) {

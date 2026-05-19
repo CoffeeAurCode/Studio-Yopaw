@@ -18,26 +18,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       groupSize?: string
     }
 
-  try {
-    await resend.emails.send({
-      from: stripBom(process.env.RESEND_FROM_EMAIL ?? 'Studio Yopaw <noreply@studio-yopaw.com>'),
-      to: stripBom(process.env.LEAD_NOTIFY_EMAIL ?? ''),
-      subject: `New Inquiry — ${fullName} (${classType})`,
-      html: `
-        <h2>New class inquiry</h2>
-        <p><strong>Name:</strong> ${fullName}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Phone:</strong> ${phone}</p>
-        <p><strong>Class type:</strong> ${classType}</p>
-        <p><strong>Preferred date:</strong> ${preferredDate ?? '—'}</p>
-        <p><strong>Preferred time:</strong> ${preferredTime ?? '—'}</p>
-        <p><strong>Group size:</strong> ${groupSize ?? '—'}</p>
-      `,
-    })
+  resend.emails.send({
+    from: stripBom(process.env.RESEND_FROM_EMAIL ?? 'Studio Yopaw <noreply@studio-yopaw.com>'),
+    to: stripBom(process.env.LEAD_NOTIFY_EMAIL ?? ''),
+    subject: `New Inquiry — ${fullName} (${classType})`,
+    html: `
+      <h2>New class inquiry</h2>
+      <p><strong>Name:</strong> ${fullName}</p>
+      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Phone:</strong> ${phone}</p>
+      <p><strong>Class type:</strong> ${classType}</p>
+      <p><strong>Preferred date:</strong> ${preferredDate ?? '—'}</p>
+      <p><strong>Preferred time:</strong> ${preferredTime ?? '—'}</p>
+      <p><strong>Group size:</strong> ${groupSize ?? '—'}</p>
+    `,
+  }).catch(err => console.error('inquiry: notification email failed', err))
 
-    return res.status(200).json({ ok: true })
-  } catch (err) {
-    console.error('inquiry email error', err)
-    return res.status(500).json({ error: 'Failed to send inquiry' })
-  }
+  return res.status(200).json({ ok: true })
 }
