@@ -72,6 +72,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const chunks = dateChunks(startDate, endDate)
 
+    async function listAllBookings(chunk: { start: string; end: string }) {
+      let page = await square.bookings.list({
+        locationId: getLocationId(),
+        startAtMin: `${chunk.start}T00:00:00Z`,
+        startAtMax: `${chunk.end}T23:59:59Z`,
+      })
+      const items = [...(page.data ?? [])]
+      while (await page._hasNextPage()) {
+        page = await page.loadNextPage()
+        items.push(...(page.data ?? []))
+      }
+      return items
+    }
+
     // Fetch schedule + availability + existing bookings in parallel
     const [allowedDates, chunkResults, bookingChunkResults] = await Promise.all([
       getAllowedDates(),
@@ -91,23 +105,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }),
         ),
       ),
-      Promise.all(
-        chunks.map(chunk =>
-          square.bookings.list({
-            locationId: getLocationId(),
-            startAtMin: `${chunk.start}T00:00:00Z`,
-            startAtMax: `${chunk.end}T23:59:59Z`,
-          }),
-        ),
-      ),
+      Promise.all(chunks.map(listAllBookings)),
     ])
 
     const allowedTimes = getClassTimes()
     const allAvailabilities = chunkResults.flatMap(r => r.availabilities ?? [])
 
     const bookingCounts = new Map<string, number>()
-    for (const result of bookingChunkResults) {
-      for (const booking of result.data ?? []) {
+    for (const bookings of bookingChunkResults) {
+      for (const booking of bookings) {
         if (booking.startAt && booking.status === 'ACCEPTED') {
           bookingCounts.set(booking.startAt, (bookingCounts.get(booking.startAt) ?? 0) + 1)
         }

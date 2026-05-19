@@ -1002,3 +1002,8 @@
       odules\.vite" && echo "Cache cleared")
   ⎿  Cache cleared
   ⎿  Context limit reached · /compact or /clear to  
+
+
+
+  # another something else
+   Error: An unexpected error occurred!                                                           Error: connect ECONNREFUSED 127.0.0.1:54544                                                        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) 

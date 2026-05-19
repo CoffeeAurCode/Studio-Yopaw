@@ -33,17 +33,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const chunks = dateChunks(startDate, endDate)
-    const chunkResults = await Promise.all(
-      chunks.map(chunk =>
-        square.bookings.list({
-          locationId: getLocationId(),
-          startAtMin: `${chunk.start}T00:00:00Z`,
-          startAtMax: `${chunk.end}T23:59:59Z`,
-        }),
-      ),
-    )
 
-    const allBookings = chunkResults.flatMap(r => r.data ?? [])
+    async function listAllBookings(chunk: { start: string; end: string }) {
+      let page = await square.bookings.list({
+        locationId: getLocationId(),
+        startAtMin: `${chunk.start}T00:00:00Z`,
+        startAtMax: `${chunk.end}T23:59:59Z`,
+      })
+      const items = [...(page.data ?? [])]
+      while (await page._hasNextPage()) {
+        page = await page.loadNextPage()
+        items.push(...(page.data ?? []))
+      }
+      return items
+    }
+
+    const chunkResults = await Promise.all(chunks.map(listAllBookings))
+    const allBookings = chunkResults.flat()
     const allDayBookings = allBookings.filter(
       b => b.allDay === true && b.status === 'ACCEPTED' && b.customerId,
     )
@@ -74,7 +80,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const schedule: Record<string, { breed: { en: string; fr: string }; serviceIds: string[] }[]> = {}
 
     for (const booking of allDayBookings) {
-      const date = booking.startAt!.slice(0, 10)
+      const date = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Toronto',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(new Date(booking.startAt!))
       const breed = customerMap.get(booking.customerId!) ?? { en: 'Unknown', fr: 'Unknown' }
       const serviceIds = (booking.appointmentSegments ?? [])
         .map(seg => seg.serviceVariationId!)

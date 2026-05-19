@@ -137,7 +137,9 @@ async function main() {
   console.log('NOTE: Go to Square Dashboard → Appointments → Services → assign Joëlle to each new service.')
 }
 
-main().catch(err => {
-  console.error('Failed:', err?.errors ?? err?.message ?? err)
-  process.exit(1)
-})
+main()
+  .then(() => process.exit(0))
+  .catch(err => {
+    console.error('Failed:', err?.errors ?? err?.message ?? err)
+    process.exit(1)
+  })

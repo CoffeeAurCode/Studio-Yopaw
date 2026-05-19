@@ -65,7 +65,9 @@ async function main() {
   console.log('The production Yin service (UFR52E7LXZ7JT4FEGCVLMAWK) is unaffected.\n')
 }
 
-main().catch(err => {
-  console.error('Failed:', err?.errors ?? err?.message ?? err)
-  process.exit(1)
-})
+main()
+  .then(() => process.exit(0))
+  .catch(err => {
+    console.error('Failed:', err?.errors ?? err?.message ?? err)
+    process.exit(1)
+  })

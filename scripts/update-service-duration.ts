@@ -63,7 +63,9 @@ async function main() {
   console.log(`VITE_SQUARE_YIN_VARIATION_VERSION=${Number(updated?.version ?? 0)}`)
 }
 
-main().catch(err => {
-  console.error('Failed:', err?.errors ?? err?.message ?? err)
-  process.exit(1)
-})
+main()
+  .then(() => process.exit(0))
+  .catch(err => {
+    console.error('Failed:', err?.errors ?? err?.message ?? err)
+    process.exit(1)
+  })

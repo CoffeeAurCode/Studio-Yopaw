@@ -130,7 +130,9 @@ async function main() {
   console.log('To add sessions: edit class-schedule.json and re-run this script.\n')
 }
 
-main().catch(err => {
-  console.error('Failed:', err?.errors ?? err?.message ?? err)
-  process.exit(1)
-})
+main()
+  .then(() => process.exit(0))
+  .catch(err => {
+    console.error('Failed:', err?.errors ?? err?.message ?? err)
+    process.exit(1)
+  })
